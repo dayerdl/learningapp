@@ -2,16 +2,16 @@ plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.jetbrains.kotlin.android)
     id("com.google.dagger.hilt.android") version "2.56.2" apply false
+    alias(libs.plugins.compose.compiler)
 }
 
 android {
     namespace = "com.example.myapplication"
-    compileSdk = 34
+    compileSdk = 35
 
     defaultConfig {
         applicationId = "com.example.myapplication"
         minSdk = 24
-        targetSdk = 34
         versionCode = 1
         versionName = "1.0"
 
@@ -40,9 +40,7 @@ android {
         buildFeatures {
         compose = true
     }
-    composeOptions {
-        kotlinCompilerExtensionVersion = "1.5.1"
-    }
+
     packaging {
         resources {
             excludes += "/META-INF/{AL2.0,LGPL2.1}"
@@ -51,10 +49,21 @@ android {
 }
 
 dependencies {
-    implementation("com.google.dagger:hilt-android:2.48")
+    implementation(libs.hilt.android)
+    implementation(libs.retrofit)
+    implementation(libs.converter.gson)
+    implementation(libs.androidx.lifecycle.viewmodel.compose)
+    implementation(libs.androidx.foundation)
+    implementation("io.coil-kt:coil-compose:2.7.0")
+    implementation(libs.converter.gson)
+
+    implementation(libs.ui)
+    implementation(libs.material3)
+    implementation(libs.ui.tooling.preview)
+    debugImplementation(libs.ui.tooling)
 
     // Para integración con Navigation Compose
-    implementation("androidx.hilt:hilt-navigation-compose:1.2.0")
+    implementation(libs.androidx.hilt.navigation.compose)
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)
     implementation(libs.androidx.activity.compose)

@@ -21,7 +21,15 @@ import kotlinx.coroutines.flow.StateFlow
 import javax.inject.Inject
 // Application class
 import android.app.Application
+import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.HiltAndroidApp
+import kotlinx.coroutines.launch
+import retrofit2.Retrofit
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
+import coil.compose.rememberAsyncImagePainter
+import retrofit2.converter.gson.GsonConverterFactory
 
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
@@ -52,16 +60,32 @@ fun MyApp() {
 
 @Composable
 fun HomeScreen(navigateToDetail: () -> Unit, viewModel: HomeViewModel = viewModel()) {
-    val counter by viewModel.counter.collectAsState()
+    val usuarios by viewModel.usuarios.collectAsState()
 
     Column(modifier = Modifier.fillMaxSize().padding(16.dp)) {
-        Text("Counter: $counter")
-        Button(onClick = { viewModel.increment() }) {
-            Text("Increment")
+        Text("Usuarios", style = MaterialTheme.typography.headlineSmall)
+        Spacer(Modifier.height(8.dp))
+
+        LazyColumn {
+            items(usuarios) { usuario ->
+                Row(modifier = Modifier.padding(8.dp)) {
+                    Image(
+                        painter = rememberAsyncImagePainter(usuario.imagen),
+                        contentDescription = null,
+                        modifier = Modifier.size(48.dp)
+                    )
+                    Spacer(Modifier.width(8.dp))
+                    Column {
+                        Text("Nombre: ${usuario.nombre}")
+                        Text("Ciudad: ${usuario.ciudad}")
+                    }
+                }
+            }
         }
+
         Spacer(modifier = Modifier.height(16.dp))
         Button(onClick = navigateToDetail) {
-            Text("Go to Detail")
+            Text("Ir al detalle")
         }
     }
 }
@@ -78,14 +102,28 @@ fun DetailScreen() {
 
 @HiltViewModel
 class HomeViewModel @Inject constructor() : ViewModel() {
-    private val _counter = MutableStateFlow(0)
-    val counter: StateFlow<Int> = _counter
 
-    fun increment() {
-        _counter.value++
+    private val retrofit = Retrofit.Builder()
+        .baseUrl("http://10.0.2.2:8080") // "10.0.2.2" si usas el emulador de Android
+        .addConverterFactory(GsonConverterFactory.create())
+        .build()
+
+    private val api = retrofit.create(UsuarioApi::class.java)
+
+    private val _usuarios = MutableStateFlow<List<Usuario>>(emptyList())
+    val usuarios: StateFlow<List<Usuario>> = _usuarios
+
+    init {
+        viewModelScope.launch {
+            try {
+                val users =  api.getUsuarios()
+                _usuarios.value = users
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+        }
     }
 }
-
 
 
 @HiltAndroidApp
