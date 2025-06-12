@@ -1,7 +1,8 @@
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.jetbrains.kotlin.android)
-    id("com.google.dagger.hilt.android") version "2.56.2" apply false
+    id ("com.google.devtools.ksp") version "2.1.20-2.0.1"
+    id("com.google.dagger.hilt.android")
     alias(libs.plugins.compose.compiler)
 }
 
@@ -49,6 +50,7 @@ android {
 }
 
 dependencies {
+    ksp(libs.hilt.compiler) // si usás KSP
     implementation(libs.hilt.android)
     implementation(libs.retrofit)
     implementation(libs.converter.gson)
