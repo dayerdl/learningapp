@@ -2,39 +2,32 @@ package com.example.myapplication
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import androidx.paging.Pager
+import androidx.paging.PagingConfig
+import androidx.paging.cachedIn
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
-
 @HiltViewModel
-class HomeViewModel @Inject constructor(val userApi: UsuarioApi) : ViewModel() {
+class HomeViewModel @Inject constructor(
+    private val usuarioRepository: UsuarioRepository
+) : ViewModel() {
 
-    private val _usuarios = MutableStateFlow<List<Usuario>>(emptyList())
-    val usuarios: StateFlow<List<Usuario>> = _usuarios
+    val pager = Pager(PagingConfig(pageSize = 20)) {
+        usuarioRepository.getUsuariosPagingSource()
+    }.flow.cachedIn(viewModelScope)
 
-    init {
+    private val _usuarioDetalle = MutableStateFlow<Usuario?>(null)
+    val usuarioDetalle: StateFlow<Usuario?> = _usuarioDetalle
+
+    fun loadUsuarioById(id: Int) {
         viewModelScope.launch {
-            try {
-                val users = userApi.getUsuarios()
-                _usuarios.value = users
-            } catch (e: Exception) {
-                e.printStackTrace()
-            }
+            val usuario = usuarioRepository.getUsuarioById(id)
+            _usuarioDetalle.value = usuario
         }
-    }
-
-    fun getUsuarioById(id: Int): StateFlow<Usuario?> {
-        return usuarios.map { list -> list.find { it.id == id } }.stateIn(
-            viewModelScope,
-            SharingStarted.Eagerly,
-            null
-        )
     }
 }
 

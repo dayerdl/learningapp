@@ -7,19 +7,24 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
@@ -30,6 +35,8 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
+import androidx.paging.LoadState
+import androidx.paging.compose.collectAsLazyPagingItems
 import coil.compose.rememberAsyncImagePainter
 import dagger.hilt.android.AndroidEntryPoint
 import dagger.hilt.android.HiltAndroidApp
@@ -67,30 +74,27 @@ fun MyApp() {
 
 @Composable
 fun HomeScreen(navigateToDetail: (Int) -> Unit, viewModel: HomeViewModel = hiltViewModel()) {
-    val usuarios by viewModel.usuarios.collectAsState()
+    val lazyPagingItems = viewModel.pager.collectAsLazyPagingItems()
 
     Column(modifier = Modifier.fillMaxSize().padding(16.dp)) {
         Text("Usuarios", style = MaterialTheme.typography.headlineSmall)
         Spacer(Modifier.height(8.dp))
 
         LazyColumn {
-            items(usuarios) { usuario ->
-                Row(
-                    modifier = Modifier
-                        .padding(8.dp)
-                        .clickable { navigateToDetail(usuario.id) }
-                ) {
-                    Image(
-                        painter = rememberAsyncImagePainter(usuario.imagen),
-                        contentDescription = null,
-                        modifier = Modifier.size(48.dp)
-                    )
-                    Spacer(Modifier.width(8.dp))
-                    Column {
-                        Text("Nombre: ${usuario.nombre}")
-                        Text("Ciudad: ${usuario.ciudad}")
-                    }
+            items(lazyPagingItems.itemCount) { index ->
+                val usuario = lazyPagingItems[index]
+                if (usuario != null) {
+                    UsuarioRow(usuario, onClick = { navigateToDetail(usuario.id) })
+                    HorizontalDivider()
+                } else {
+                    PlaceholderRow()
                 }
+            }
+
+            when (lazyPagingItems.loadState.append) {
+                is LoadState.Loading -> item { LoadingItem() }
+                is LoadState.Error -> item { ErrorItem() }
+                else -> {}
             }
         }
     }
@@ -99,7 +103,11 @@ fun HomeScreen(navigateToDetail: (Int) -> Unit, viewModel: HomeViewModel = hiltV
 
 @Composable
 fun DetailScreen(userId: Int, viewModel: HomeViewModel = hiltViewModel()) {
-    val usuario by viewModel.getUsuarioById(userId).collectAsState(initial = null)
+    val usuario by viewModel.usuarioDetalle.collectAsState()
+
+    LaunchedEffect(userId) {
+        viewModel.loadUsuarioById(userId)
+    }
 
     Column(modifier = Modifier.fillMaxSize().padding(16.dp)) {
         if (usuario != null) {
@@ -115,10 +123,52 @@ fun DetailScreen(userId: Int, viewModel: HomeViewModel = hiltViewModel()) {
             Text("Nombre: ${usuario!!.nombre}")
             Text("Ciudad: ${usuario!!.ciudad}")
         } else {
-            Text("Usuario no encontrado")
+            Text("Cargando usuario...")
         }
     }
 }
+
+@Composable
+fun UsuarioRow(usuario: Usuario, onClick: () -> Unit) {
+    Row(
+        modifier = Modifier
+            .padding(8.dp)
+            .clickable { onClick() }
+    ) {
+        Image(
+            painter = rememberAsyncImagePainter(usuario.imagen),
+            contentDescription = null,
+            modifier = Modifier.size(48.dp)
+        )
+        Spacer(Modifier.width(8.dp))
+        Column {
+            Text("Nombre: ${usuario.nombre}")
+            Text("Ciudad: ${usuario.ciudad}")
+        }
+    }
+}
+
+@Composable
+fun PlaceholderRow() {
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(48.dp)
+    ) {
+        CircularProgressIndicator()
+    }
+}
+
+@Composable
+fun LoadingItem() {
+    Text("Cargando más usuarios...", modifier = Modifier.padding(16.dp))
+}
+
+@Composable
+fun ErrorItem() {
+    Text("Error al cargar más usuarios", modifier = Modifier.padding(16.dp))
+}
+
 
 
 

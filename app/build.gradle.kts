@@ -50,6 +50,7 @@ android {
 }
 
 dependencies {
+    implementation(libs.androidx.paging.common.android)
     ksp(libs.hilt.compiler) // si usás KSP
     implementation(libs.hilt.android)
     implementation(libs.retrofit)
@@ -63,6 +64,10 @@ dependencies {
     implementation(libs.material3)
     implementation(libs.ui.tooling.preview)
     debugImplementation(libs.ui.tooling)
+
+    implementation(libs.androidx.compose.bom.v20250500)
+    implementation(libs.androidx.paging.compose)
+
 
     // Para integración con Navigation Compose
     implementation(libs.androidx.hilt.navigation.compose)
