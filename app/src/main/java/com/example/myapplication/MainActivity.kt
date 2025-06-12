@@ -25,7 +25,6 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
-import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -99,7 +98,7 @@ fun HomeScreen(navigateToDetail: (Int) -> Unit, viewModel: HomeViewModel = hiltV
 
 
 @Composable
-fun DetailScreen(userId: Int, viewModel: HomeViewModel = viewModel()) {
+fun DetailScreen(userId: Int, viewModel: HomeViewModel = hiltViewModel()) {
     val usuario by viewModel.getUsuarioById(userId).collectAsState(initial = null)
 
     Column(modifier = Modifier.fillMaxSize().padding(16.dp)) {
