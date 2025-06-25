@@ -10,7 +10,12 @@ class UsuarioRepository @Inject constructor(
         return UsuarioPagingSource(usuarioApi)
     }
 
-    suspend fun getUsuarioById(id: Int): Usuario {
-        return usuarioApi.getUsuarioById(id)
+    suspend fun getUsuarioById(id: Int): Result<Usuario> {
+        return try {
+            val usuario = usuarioApi.getUsuarioById(id)
+            Result.success(usuario)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
     }
 }

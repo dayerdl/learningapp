@@ -23,11 +23,20 @@ class HomeViewModel @Inject constructor(
     private val _usuarioDetalle = MutableStateFlow<Usuario?>(null)
     val usuarioDetalle: StateFlow<Usuario?> = _usuarioDetalle
 
+    private val _error = MutableStateFlow<String?>(null)
+    val error: StateFlow<String?> = _error
+
     fun loadUsuarioById(id: Int) {
         viewModelScope.launch {
-            val usuario = usuarioRepository.getUsuarioById(id)
-            _usuarioDetalle.value = usuario
+            usuarioRepository.getUsuarioById(id)
+                .onSuccess { usuario ->
+                    _usuarioDetalle.value = usuario
+                    _error.value = null
+                }
+                .onFailure { throwable ->
+                    _usuarioDetalle.value = null
+                    _error.value = throwable.message ?: "Error desconocido"
+                }
         }
     }
 }
-

@@ -18,7 +18,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
@@ -27,7 +27,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavType
@@ -76,7 +78,11 @@ fun MyApp() {
 fun HomeScreen(navigateToDetail: (Int) -> Unit, viewModel: HomeViewModel = hiltViewModel()) {
     val lazyPagingItems = viewModel.pager.collectAsLazyPagingItems()
 
-    Column(modifier = Modifier.fillMaxSize().padding(16.dp)) {
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(16.dp)
+    ) {
         Text("Usuarios", style = MaterialTheme.typography.headlineSmall)
         Spacer(Modifier.height(8.dp))
 
@@ -91,39 +97,102 @@ fun HomeScreen(navigateToDetail: (Int) -> Unit, viewModel: HomeViewModel = hiltV
                 }
             }
 
-            when (lazyPagingItems.loadState.append) {
-                is LoadState.Loading -> item { LoadingItem() }
-                is LoadState.Error -> item { ErrorItem() }
-                else -> {}
+            lazyPagingItems.apply {
+                when {
+                    loadState.refresh is LoadState.Loading -> {
+                        // Primera carga o refresco
+                        item { LoadingItem() }
+                    }
+                    loadState.append is LoadState.Loading -> {
+                        // Carga de página siguiente
+                        item { LoadingItem() }
+                    }
+                    loadState.refresh is LoadState.Error -> {
+                        val e = loadState.refresh as LoadState.Error
+                        item {
+                            ErrorItem(message = e.error.localizedMessage ?: "Error desconocido") {
+                                retry()
+                            }
+                        }
+                    }
+                    loadState.append is LoadState.Error -> {
+                        val e = loadState.append as LoadState.Error
+                        item {
+                            ErrorItem(message = e.error.localizedMessage ?: "Error desconocido") {
+                                retry()
+                            }
+                        }
+                    }
+                }
             }
         }
     }
 }
 
+@Composable
+fun ErrorItem(message: String = "Ocurrió un error", onRetry: () -> Unit) {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(16.dp),
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        Text(
+            text = message,
+            color = MaterialTheme.colorScheme.error,
+            style = MaterialTheme.typography.bodyMedium,
+            textAlign = TextAlign.Center
+        )
+        Spacer(modifier = Modifier.height(8.dp))
+        Button(onClick = onRetry) {
+            Text("Reintentar")
+        }
+    }
+}
+
+
 
 @Composable
-fun DetailScreen(userId: Int, viewModel: HomeViewModel = hiltViewModel()) {
+fun DetailScreen(
+    userId: Int,
+    viewModel: HomeViewModel = hiltViewModel()
+) {
     val usuario by viewModel.usuarioDetalle.collectAsState()
+    val error by viewModel.error.collectAsState()
 
     LaunchedEffect(userId) {
         viewModel.loadUsuarioById(userId)
     }
 
-    Column(modifier = Modifier.fillMaxSize().padding(16.dp)) {
-        if (usuario != null) {
-            Text("Detalle del usuario", style = MaterialTheme.typography.headlineSmall)
-            Spacer(Modifier.height(16.dp))
-            Image(
-                painter = rememberAsyncImagePainter(usuario!!.imagen),
-                contentDescription = null,
-                modifier = Modifier.size(100.dp)
-            )
-            Spacer(Modifier.height(8.dp))
-            Text("ID: ${usuario!!.id}")
-            Text("Nombre: ${usuario!!.nombre}")
-            Text("Ciudad: ${usuario!!.ciudad}")
-        } else {
-            Text("Cargando usuario...")
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(16.dp)
+    ) {
+        when {
+            error != null -> {
+                Text(
+                    text = error ?: "Error desconocido",
+                    color = MaterialTheme.colorScheme.error,
+                    style = MaterialTheme.typography.bodyLarge
+                )
+            }
+            usuario != null -> {
+                Text("Detalle del usuario", style = MaterialTheme.typography.headlineSmall)
+                Spacer(Modifier.height(16.dp))
+                Image(
+                    painter = rememberAsyncImagePainter(usuario!!.imagen),
+                    contentDescription = null,
+                    modifier = Modifier.size(100.dp)
+                )
+                Spacer(Modifier.height(8.dp))
+                Text("ID: ${usuario!!.id}")
+                Text("Nombre: ${usuario!!.nombre}")
+                Text("Ciudad: ${usuario!!.ciudad}")
+            }
+            else -> {
+                Text("Cargando usuario...")
+            }
         }
     }
 }
